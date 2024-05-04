@@ -11,13 +11,19 @@
   (displayln "You see the Fridge to the North, and the Bakery to the East."))
 
 ; Variable to store the initial state of the game
-(define default-game-state (list(list)(list "Checkout")(list "Bakery" '("Bread" "Sugar") #f)(list "Fridge" '("Milk" "Eggs") #f)(list "Freezer" '("Hidden Ice Cream") #f)(list "Checkout" '() #t)))
+(define default-game-state (list
+                            (list)  ; Spawn with an empty inventory
+                            (list "Checkout")  ; Spawn in the Checkout
+                            (list "Bakery" '("Bread" "Sugar") #f)  ; Name of area, items in that room, and if the room has been visited
+                            (list "Fridge" '("Milk" "Eggs") #f)  ; Name of area, items in that room, and if the room has been visited
+                            (list "Freezer" '("Hidden Ice Cream") #f)  ; Name of area, items in that room, and if the room has been visited
+                            (list "Checkout" '() #t)))  ; Name of area, nothing spawning at checkout, and room was visited because we spawn there
 
 ; Function to tell the player what items they have in their inventory
-; inv: current inveentory
+; inv: current inventory
 ; Returns: "" because it will print #<void> otherwise, just prints to the user
 (define (player-inv-menu inv)
-  (if (empty? inv)
+  (if (empty? inv)  ; Tests if there are groceries in inv and display if so
       (displayln "You have not gotten any groceries")
       (printf "You have: ~a in your cart\n" (string-join inv ", ")))"")
 
@@ -36,9 +42,9 @@
 ; game-state: current game state
 ; Returns: nothing, just prints a description to the terminal
 (define (describe-current-area-menu game-state)
-  (define curr-room (first (second game-state)))
+  (define curr-room (first (second game-state)))  ; Current room
   (for ([item (get-items-in-curr-room game-state)])  ; Goes through all items in the curr-room
-    (unless (string-contains? (string-downcase item) "hidden")
+    (unless (string-contains? (string-downcase item) "hidden")  ; Do not print hidden items
       (printf "You see ~a in here\n" item)))
   (cond  ; Cond for displaying the right text for each area
     [(string=? curr-room "Bakery") (begin (displayln "You are at the Bakery. You see bread overflowing from the shelves, and a worker somehow adding more. You also see the Checkout, and the Fridge.")
@@ -54,9 +60,9 @@
 ; game-state: current game state
 ; Returns: nothing, just prints to console
 (define (show-actions game-state)
-  (printf "You are currently at the ~a\n" (first (second game-state)))
-  (printf "~a" (player-inv-menu (first game-state)))
-  (displayln "Available moves are:")
+  (printf "You are currently at the ~a\n" (first (second game-state)))  ; print current area
+  (printf "~a" (player-inv-menu (first game-state)))  ; prints all items in your inv
+  (displayln "Available moves are:")  ; shows available moves
   (help-menu))
 
 ; Function to search the room (behind other groceries)
@@ -67,7 +73,7 @@
   (define hidden-list (filter (lambda (item) (string-contains? (string-downcase item) "hidden")) (get-items-in-curr-room game-state)))  ; Gets all the hidden marked items
   (if (empty? hidden-list)  ; Will tell the user what was uncovered in the search, if anything
       (displayln "Nothing new was uncovered in the search")
-      (for ([item hidden-list])
+      (for ([item hidden-list])  ; goes through the hidden items and uncovers the item
         (printf "You find ~a in the search\n" (substring item 7 (string-length item)))))
   (update-game-state curr-room game-state (list curr-room (map (lambda (str) (string-replace str "hidden " "")) (get-items-in-curr-room game-state)) #t) "" (add-to-inv game-state "")))  ; Returns the updated game state
 
@@ -162,10 +168,9 @@
 ; game-state: current game state
 ; Returns: updated game state after the move, or appends false to the list to show player is in the same room
 (define (move-player direction game-state)
-  ; List of valid moves
-  (define valid-moves (list "move n" "move ne" "move e" "move se" "move s" "move sw" "move w" "move nw"))
-  (define curr-room (first (second game-state)))
-  (if (not (not (member direction valid-moves)))
+  (define valid-moves (list "move n" "move ne" "move e" "move se" "move s" "move sw" "move w" "move nw"))  ; List of valid moves
+  (define curr-room (first (second game-state)))  ; Current room
+  (if (not (not (member direction valid-moves)))  ; if not a valid move, tell the user
       (cond ; If in the checkout and moving east, enter the bakery and update the game state
         [(and (string=? direction "move e") (string=? curr-room "Checkout")) (update-game-state "location" game-state "Bakery" "" "")]
         [(and (or (string=? direction "move n") (string=? direction "move ne")) (string=? curr-room "Checkout")) (update-game-state "location" game-state "Fridge" "" "")]
@@ -195,12 +200,16 @@
 ; Function to check if the user has met the leave conditions
 ; game-state: current game state
 ; Returns: list of game state and true/false valid leave condition
-(define (check-leave-cond game-state)  ; Checks the users inventory and if they have all the necessary items 
+(define (check-leave-cond game-state)  ; Checks the users inventory and if they have all the necessary items
+  (define required-items (list "bread" "sugar" "milk" "eggs"))
+  (define alt-required-items (list "bread" "sugar" "milk" "eggs" "ice cream"))
   (if (string=? (first (second game-state)) "Checkout")
       (cond
-        [(and (member "bread" (first game-state)) (member "milk" (first game-state)) (member "eggs" (first game-state)) (member "sugar" (first game-state)) (member "ice cream" (first game-state))) (begin (displayln "The End.\nYou got all of the ingredients on the list, and your wife is excited that you brought her home ice cream.") (list game-state "true"))]
-        [(and (member "bread" (first game-state)) (member "milk" (first game-state)) (member "eggs" (first game-state)) (member "sugar" (first game-state))) (begin (displayln "The End.\nYou got everything on the list, and woke up to French Toast the next morning.") (list game-state "true"))]
-        [(or (not (member "bread" (first game-state))) (not (member "milk" (first game-state))) (not (member "eggs" (first game-state))) (not (member "sugar" (first game-state)))) (begin (displayln "You do not have everything on the list") (list game-state "false"))])
+        [(equal? (not (not (and (= (length (first game-state)) (length alt-required-items)) (andmap (lambda (item) (member item alt-required-items equal?)) (first game-state))))) #t)  ; Tests for hidden ending
+         (begin (displayln "The End.\nYou got all of the ingredients on the list, and your wife is excited that you brought her home ice cream.") (list game-state "true"))]
+        [(equal? (not (not (and (= (length (first game-state)) (length required-items)) (andmap (lambda (item) (member item required-items equal?)) (first game-state))))) #t)  ; Tests for regular ending
+         (begin (displayln "The End.\nYou got everything on the list, and woke up to French Toast the next morning.") (list game-state "true"))]
+        [else (begin (displayln "You do not have everything on the list") (list game-state "false"))])   ; if not have all required items
       (begin (displayln "You have to be at the checkout to leave") (list game-state "false"))))
 
 ; Function to prompt again or quit
@@ -212,11 +221,11 @@
      (begin
        (displayln "Would you like to play again? (Y/N)")
        (define user-input (string-trim (string-downcase (read-line))))  ; Reads the input from the user
-       (cond
+       (cond  ; processes the users input of playing again or not
          [(string=? (string-downcase user-input) "y") (game-loop default-game-state)]
          [(string=? (string-downcase user-input) "n") (exit 0)]
          [else (displayln "Please enter a valid option (Y/N)")]))]
-    [else (first big-list)]))
+    [else (first big-list)]))  ; will return the regular state if not ready to leave
 
 ; Function to loop through prompting the user and processing input
 ; game-state: current game state
@@ -234,7 +243,6 @@
     [(string=? user-input "leave") (again? (check-leave-cond game-state))]
     [(string=? user-input "search") (game-loop (search-current-area game-state))]
     [(string=? user-input "help") (show-actions game-state)]
-    [(string=? user-input "state") (displayln game-state)]
     [else (begin (displayln "Invalid command.") (help-menu))])  ; Give the user the help menu since they did not input a valid move
   (game-loop game-state))
 
