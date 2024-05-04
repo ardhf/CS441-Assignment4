@@ -1,6 +1,7 @@
 # CS441-Assignment4
 
-##**Grocery Nightmare**
+##**Grocery Nightmare
+**
 
 This game takes place inside a grocery store.
 There are 4 locations in this store, the Checkout, the Bakery, the Fridge, and the Freezer.
