@@ -47,7 +47,7 @@
     (unless (string-contains? (string-downcase item) "hidden")  ; Do not print hidden items
       (printf "You see ~a in here\n" item)))
   (cond  ; Cond for displaying the right text for each area
-    [(string=? curr-room "Bakery") (begin (displayln "You are at the Bakery. You see bread overflowing from the shelves, and a worker somehow adding more. You also see the Checkout, and the Fridge.")
+    [(string=? curr-room "Bakery") (begin (displayln "You are at the Bakery. You see a whole shelf with different kinds of sugar. You also see bread overflowing from the shelves, and a worker somehow adding more.")
                                           (displayln "You see the Fridge to the Northwest, and the checkout to the West."))]
     [(string=? curr-room "Fridge") (begin (displayln "You are in the Fridge. It's a little chilly. You see a bunch of milk and eggs lining the shelves.")
                                           (displayln "You see the Freezer to the East, the Checkout to the Southwest, and the Bakery to the Southeast."))]
